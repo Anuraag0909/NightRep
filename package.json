@@ -17,7 +17,9 @@
     "proof-server:stop": "docker compose down",
     "clean": "rm -rf contracts/managed .midnight-state.json .midnight-wallet-state",
     "test": "vitest run",
-    "test:e2e": "tsx scripts/e2e-check.ts"
+    "test:e2e": "tsx scripts/e2e-check.ts",
+    "frontend:dev": "npm run dev --prefix frontend",
+    "frontend:build": "npm run build --prefix frontend"
   },
   "dependencies": {
     "@midnight-ntwrk/compact-runtime": "0.16.0",
