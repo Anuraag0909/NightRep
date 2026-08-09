@@ -1,65 +1,74 @@
+# ================================
 # Dependencies
+# ================================
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# ================================
 # Build output
+# ================================
 dist/
 build/
+coverage/
 
-# Environment variables
+# ================================
+# Environment variables / secrets
+# ================================
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 
-# Contract artifacts
+# ================================
+# Contract generated artifacts
+# ================================
 contracts/managed/
+managed/
 
-# Deployment info
+# ================================
+# Deployment information
+# ================================
 deployment.json
 
-# Wallet seed (sensitive)
+# ================================
+# Midnight local/network state
+# ================================
+.midnight-state.json
+.midnight-wallet-state/
+*-state/
 
-# OS generated files
+# ================================
+# Local database / runtime data
+# ================================
+midnight-level-db/
+logs/
+pids/
+*.pid
+*.pid.lock
+*.seed
+
+# ================================
+# Temporary files
+# ================================
+tmp/
+temp/
+
+# ================================
+# OS files
+# ================================
 .DS_Store
 Thumbs.db
 
+# ================================
 # IDE files
+# ================================
 .vscode/settings.json
 .idea/
 *.swp
 *.swo
 
-# Logs
-logs/
-*.log
-
-# Runtime data
-pids/
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory
-coverage/
-
-# Private state
-*-state/
-
-# Temporary files
-tmp/
-temp/
-
-# Midnight network state (per-network seeds, deploy addresses)
-.midnight-state.json
-
-# Midnight wallet sync state (per-network serialized wallet state cache)
-.midnight-wallet-state/
-
-.midnight-state.json
-.midnight-wallet-state/
-*.env.local
-managed/
+# ================================
+# Generated Vite files
+# ================================
+*.timestamp-*.mjs
