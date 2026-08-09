@@ -1,26 +1,63 @@
 import React, { useState, useEffect } from 'react';
+import { buildReputationContract } from '../utils/midnightProvider';
+import { ledger } from '../../../contracts/managed/reputation/contract';
 interface Props {
-  api: any;
+  providers: any;
   address: string;
 }
 
-export const ReputationFeature: React.FC<Props> = ({ api, address }) => {
+export const ReputationFeature: React.FC<Props> = ({ providers, address }) => {
   const [score, setScore] = useState<number>(0);
   const [amount, setAmount] = useState<number>(0);
   const [receipt, setReceipt] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
+  const [statusType, setStatusType] = useState<'info' | 'success' | 'error' | ''>('');
 
-  const contractAddress = import.meta.env.VITE_CONTRACT_ADDRESS || '';
+  const contractAddress = import.meta.env.VITE_CONTRACT_ADDRESS || '8f4da10f1fd7c42f2caa59988cd0d88fd3d41a30898c746ed325fed575654080';
 
-  // Mocking reading the indexer state, since the real setup requires a 
-  // complex midnight provider to query indexer state for scores map
   const fetchScore = async () => {
-    // In a real app, use `indexerPublicDataProvider` to query the contract state
-    // const state = await indexer.queryContractState(contractAddress);
-    // Parse the state.scores map.
-    setScore(0);
-    setStatusMsg('State fetched from indexer.');
+    if (!providers || !contractAddress) return;
+    setStatusMsg('Fetching score...');
+    setStatusType('info');
+    try {
+      const contractState = await providers.publicDataProvider.queryContractState(contractAddress);
+      if (contractState) {
+        const user = new Uint8Array(32);
+        let userScore = 0n;
+        try {
+          // Attempt using the generated ledger helper
+          const stateLedger = ledger(contractState.data);
+          if (stateLedger.scores.member(user)) {
+            userScore = stateLedger.scores.lookup(user);
+          }
+        } catch (ledgerErr) {
+          console.warn("Ledger helper failed (likely Vite dual-package bug). Extracting raw state manually...", ledgerErr);
+          // Fallback: manually parse the raw map out of the state tree to completely avoid module crashes
+          try {
+            const rawMap = (contractState.data as any).state.asArray()[0].asMap();
+            const keys = rawMap.keys();
+            for (const key of keys) {
+              if (key.every((val: number, i: number) => val === user[i])) {
+                userScore = BigInt(rawMap.get(key).asCell().value);
+                break;
+              }
+            }
+          } catch (manualErr) {
+            console.error("Manual state extraction also failed.", manualErr);
+          }
+        }
+        setScore(Number(userScore));
+      } else {
+        setScore(0);
+      }
+      setStatusMsg('');
+      setStatusType('');
+    } catch (err) {
+      console.error(err);
+      setStatusMsg('Error fetching score.');
+      setStatusType('error');
+    }
   };
 
   useEffect(() => {
@@ -31,64 +68,93 @@ export const ReputationFeature: React.FC<Props> = ({ api, address }) => {
 
   const handleRecordTrade = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!api || !address) return;
+    if (!providers || !address) return;
+    
+    if (!contractAddress) {
+      // Just fallback to the default if it's missing to avoid blocking the user
+      setStatusMsg('Warning: Contract address not in .env, using default.');
+    }
+
+    
     setIsSubmitting(true);
-    setStatusMsg('Submitting transaction proof...');
+    setStatusMsg('Generating proof...');
+    setStatusType('info');
     try {
-      // In a real Midnight dApp, you would construct the provider and call:
-      // await contract.impureCircuits.record_trade({ ... }, address, amount, receipt_bytes);
-      
-      // Simulate proof generation and tx submit
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      setStatusMsg('Trade recorded successfully!');
+      const contract = await buildReputationContract(providers, contractAddress);
+      const user = new Uint8Array(32); 
+      // Build exactly 32 bytes for receipt (contract expects Bytes<32>)
+      const receiptBuf = new Uint8Array(32);
+      const encoded = new TextEncoder().encode(receipt.substring(0, 32));
+      receiptBuf.set(encoded.slice(0, 32));
+      const tx = await contract.callTx.record_trade(user, BigInt(amount), receiptBuf);
+      setStatusMsg('Success! Tx hash: ' + (tx as any).txHash);
+      setStatusType('success');
+      await fetchScore();
     } catch (err: any) {
+      console.error(err);
       setStatusMsg('Error: ' + err.message);
+      setStatusType('error');
     } finally {
       setIsSubmitting(false);
-      setReceipt(''); // Clear private input immediately
+      setReceipt('');
     }
   };
 
   return (
-    <div className="feature-card">
-      <h3>Decentralized Reputation</h3>
-      <p>Contract: {contractAddress ? contractAddress.slice(0,10) + '...' : 'Not Configured'}</p>
-      
-      <div className="score-display">
-        <h4>Your Reputation Score: {score}</h4>
+    <div className="dashboard-feature">
+      <div className="feature-header">
+        <div className="feature-title">
+           <h2>Welcome to your NightRep Dashboard</h2>
+           <p>Experience and Maximize the Benefits of Zero-Knowledge Features</p>
+        </div>
       </div>
 
-      <form onSubmit={handleRecordTrade} className="feature-form">
-        <div className="form-group">
-          <label>Trade Amount</label>
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(Number(e.target.value))}
-            min="1"
-            required
-          />
-        </div>
+      <div className="feature-grid">
+         <div className="overview-card">
+            <div className="card-header">
+               <h3>Overview</h3>
+               <span className="dropdown-badge">All time v</span>
+            </div>
+            <div className="score-big">
+               <span className="score-value">{score}</span>
+               <span className="score-label">Reputation Score</span>
+            </div>
+            <p className="contract-address">Contract: {contractAddress ? contractAddress.slice(0,10) + '...' : 'Not Configured'}</p>
+         </div>
 
-        <div className="form-group">
-          <label>Secret Receipt (Private Input)</label>
-          <input
-            type="password" // Masks private input
-            value={receipt}
-            onChange={(e) => setReceipt(e.target.value)}
-            required
-          />
-          <small className="privacy-label">
-            🛡️ Proved without revealing your input
-          </small>
-        </div>
-
-        <button type="submit" className="btn btn-primary" disabled={isSubmitting || !api}>
-          {isSubmitting ? 'Generating ZK Proof...' : 'Record Trade'}
-        </button>
-      </form>
-
-      {statusMsg && <div className="status-msg">{statusMsg}</div>}
+         <div className="action-card">
+            <div className="card-header">
+               <h3>Record Transaction</h3>
+            </div>
+            <form onSubmit={handleRecordTrade} className="record-form">
+              <div className="input-group">
+                <label>Trade Amount</label>
+                <input type="number" value={amount} onChange={(e) => setAmount(Number(e.target.value))} min="1" required />
+              </div>
+              <div className="input-group">
+                <label>Secret Receipt (Private)</label>
+                <input type="password" value={receipt} onChange={(e) => setReceipt(e.target.value)} required />
+              </div>
+              <button type="submit" className="btn-solid full-width" disabled={isSubmitting || !providers}>
+                {isSubmitting ? 'Processing...' : 'Record Trade'}
+              </button>
+              {statusMsg && (
+                <div className={`status-alert ${statusType}`}>
+                  {statusType === 'success' && (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                  )}
+                  {statusType === 'error' && (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                  )}
+                  {statusType === 'info' && (
+                    <div className="spinner"></div>
+                  )}
+                  <span className="status-text">{statusMsg}</span>
+                </div>
+              )}
+            </form>
+         </div>
+      </div>
     </div>
   );
 };

@@ -170,20 +170,33 @@ async function main() {
     let running = true;
     while (running) {
       console.log('─── Menu ───────────────────────────────────────────────────────');
-      console.log('  1. Store a message');
-      console.log('  2. Read current message');
+      console.log('  1. Record a trade');
+      console.log('  2. Read user reputation scores');
       console.log('  3. Check wallet balance');
       console.log('  4. Exit\n');
 
       const choice = await rl.question('  Your choice: ');
 
+      // Helper function to convert a string to a 32-byte Uint8Array
+      const to32Bytes = (str: string) => {
+        const buf = Buffer.alloc(32);
+        buf.write(str, 0, 'utf8');
+        return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+      };
+
       switch (choice.trim()) {
         case '1': {
-          const message = await rl.question('  Enter your message: ');
+          const user = await rl.question('  Enter username/ID: ');
+          const amountStr = await rl.question('  Enter trade amount: ');
+          const receiptStr = await rl.question('  Enter receipt identifier: ');
           console.log('\n  Submitting transaction (this may take 30-60 seconds)...');
           try {
-            const tx = await deployed.callTx.storeMessage(message);
-            console.log(`\n  ✅ Message stored: "${message}"`);
+            const userBytes = to32Bytes(user);
+            const amount = BigInt(amountStr);
+            const receiptBytes = to32Bytes(receiptStr);
+            
+            const tx = await deployed.callTx.record_trade(userBytes, amount, receiptBytes);
+            console.log(`\n  ✅ Trade recorded for "${user}" (amount: ${amount})`);
             console.log(`  Transaction ID: ${tx.public.txId}`);
             console.log(`  Block height: ${tx.public.blockHeight}\n`);
           } catch (error) {
@@ -193,15 +206,24 @@ async function main() {
         }
 
         case '2': {
-          console.log('\n  Reading message from blockchain...');
+          console.log('\n  Reading reputation scores from blockchain...');
           try {
             const contractState = await providers.publicDataProvider.queryContractState(deployment.address);
             if (contractState) {
               const ledgerState = HelloWorld.ledger(contractState.data);
-              const message = Buffer.from(ledgerState.message).toString();
-              console.log(`\n  📋 Current message: "${message}"\n`);
+              let count = 0;
+              for (const [key, value] of ledgerState.scores) {
+                // strip trailing null bytes from the buffer when printing
+                const userName = Buffer.from(key).toString('utf8').replace(/\0/g, '');
+                console.log(`  - User "${userName}": Score ${value}`);
+                count++;
+              }
+              if (count === 0) {
+                console.log('  📋 No scores found (ledger is empty)');
+              }
+              console.log('');
             } else {
-              console.log('\n  📋 No message found (contract state empty)\n');
+              console.log('\n  📋 No contract state found\n');
             }
           } catch (error) {
             console.error('\n  ❌ Failed:', error instanceof Error ? error.message : error);

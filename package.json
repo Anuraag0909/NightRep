@@ -54,5 +54,13 @@
     "blockchain",
     "zero-knowledge",
     "privacy"
-  ]
+  ],
+  "allowScripts": {
+    "classic-level@3.0.0": true,
+    "esbuild@0.28.1": true,
+    "msgpackr-extract@3.0.4": true
+  },
+  "overrides": {
+    "@midnight-ntwrk/onchain-runtime-v3": "3.1.0"
+  }
 }

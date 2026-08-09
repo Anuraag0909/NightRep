@@ -3,25 +3,18 @@ pragma language_version >= 0.23;
 import CompactStandardLibrary;
 
 export ledger scores: Map<Bytes<32>, Uint<32>>;
+export ledger used_receipts: Map<Bytes<32>, Uint<32>>;
 
-export circuit record_trade(user: Bytes<32>, amount: Uint<32>, secret_receipt: Bytes<32>): [] {
-    assert(secret_receipt == secret_receipt, "Invalid receipt");
+export circuit record_trade(user: Bytes<32>, amount: Uint<32>, receipt: Bytes<32>): [] {
+    const public_receipt = disclose(receipt);
+    const public_user = disclose(user);
+    
+    assert(!used_receipts.member(public_receipt), "Receipt already used");
     assert(amount > 0, "Amount must be positive");
     
-    const public_user = disclose(user);
-    const current_score = scores.member(public_user) ? scores.lookup(public_user) : 0;
+    used_receipts.insert(public_receipt, 1 as Uint<32>);
     
+    const current_score = scores.member(public_user) ? scores.lookup(public_user) : (0 as Uint<32>);
     const amount_disclosed = disclose(amount);
     scores.insert(public_user, (current_score + amount_disclosed) as Uint<32>);
-}
-
-export circuit record_repayment(user: Bytes<32>, amount: Uint<32>, secret_receipt: Bytes<32>): [] {
-    assert(secret_receipt == secret_receipt, "Invalid receipt");
-    assert(amount > 0, "Amount must be positive");
-    
-    const public_user = disclose(user);
-    const current_score = scores.member(public_user) ? scores.lookup(public_user) : 0;
-    
-    const amount_disclosed = disclose(amount);
-    scores.insert(public_user, (current_score + (amount_disclosed * 2)) as Uint<32>);
 }
