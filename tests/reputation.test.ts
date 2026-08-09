@@ -17,7 +17,7 @@ describe('Decentralized Reputation System Contract', () => {
   test('State transitions: correctly updates public reputation score map', async () => {
     // Note: Simulated state transition test.
     const contract = new Contract({});
-    expect(contract.impureCircuits.record_repayment).toBeTypeOf('function');
+    expect(contract.impureCircuits.record_trade).toBeTypeOf('function');
   });
 
   test('Privacy: private inputs (secret_receipt) are never exposed in any output or event', async () => {
