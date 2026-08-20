@@ -22,9 +22,10 @@ coverage/
 
 # ================================
 # Contract generated artifacts
+# (Removed to allow Vercel to access compiled contracts)
 # ================================
-contracts/managed/
-managed/
+# contracts/managed/
+# managed/
 
 # ================================
 # Deployment information

@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "file": "index.js",
+  "sourceRoot": "../../../../",
+  "sources": ["contracts/reputation.compact"],
+  "names": [],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;EAAA;;;;;;;;;;MAOA,AAAA,YAYC;;;;;cAZ2B,MAAe;cAAE,QAAgB;cAAE,SAAkB;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;yCAArD,MAAe,+BAAE,QAAgB,+BAAE,SAAkB;;;;;;;;;8CAArD,MAAe;8CAAE,QAAgB;8CAAE,SAAkB;;;OAYhF;;;;GACA;EApBD;;;;;;;;;;;;;;;;;;;;;;;;;;;IAIA;;;;;;;;;;yEAA+C;IAC/C;;;;;;;;;;yEAAsD;;;;;;;GAerD;EAbD,AAAA,eAYC,4BAZ2B,MAAe,EAAE,QAAgB,EAAE,SAAkB;UACvE,gBAAkC,GAAR,SAAO;UACjC,aAA4B,GAAL,MAAI;qDAEzB;;;;;;;;;;;4KAAqB,gBAAc;;;;0HAAtB;;4BACd,QAAM;UAEb,KAAa;IAAb;;;;;;;;;;2HAAqB,gBAAc;;;2HAAnC,KAAa;;;wEAAA;UAEP,eAAyF,2BAAzE;;;;;;;;;;;2KAAc,aAAW;;;;yHAAnB;;oDAAuB;;;;;;;;;;;;;;+IAAc,aAAW;;;yHAAnB;;;UACnD,kBAAmC,GAAP,QAAM;UACxC,KAAM;;;;;qBAAsB,eAAa,GAAG,kBAAgB;IAA5D;;;;;;;;;;2HAAc,aAAW;;;2HAAzB,KAAM;;;wEAAA;;GACT;;;;;;;;;;;;;;;;IAfD;;;;;uCAAA;;;;;;;;;;;;;;;;4GAA+C;;;;;;uCAA/C;;;;;;;;;;;;4GAA+C;;;;;;;;;;;;;;uCAA/C;;;;;;;;;;;;;;;4GAA+C;;;;;;;;;;;;;;uCAA/C;;;;;;;;;;;;;;;;;4GAA+C;;;;;;;;;KAAA;IAC/C;;;;;uCAAA;;;;;;;;;;;;;;;;4GAAsD;;;;;;uCAAtD;;;;;;;;;;;;4GAAsD;;;;;;;;;;;;;;uCAAtD;;;;;;;;;;;;;;;4GAAsD;;;;;;;;;;;;;;uCAAtD;;;;;;;;;;;;;;;;;4GAAsD;;;;;;;;;KAAA;;;;;;;;;;"
+}
