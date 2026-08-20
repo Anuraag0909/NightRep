@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { buildReputationContract } from '../utils/midnightProvider';
 import { ledger } from '../../../contracts/managed/reputation/contract';
 interface Props {
@@ -77,19 +78,62 @@ export const ReputationFeature: React.FC<Props> = ({ providers, address }) => {
 
     
     setIsSubmitting(true);
-    setStatusMsg('Generating proof...');
+    setStatusMsg('Building contract call...');
     setStatusType('info');
     try {
       const contract = await buildReputationContract(providers, contractAddress);
-      const user = new Uint8Array(32); 
+      
+      const user = new Uint8Array(32);
+      if (address) {
+        const encodedUser = new TextEncoder().encode(address);
+        const start = Math.max(0, encodedUser.length - 32);
+        user.set(encodedUser.slice(start));
+      }
+      
       // Build exactly 32 bytes for receipt (contract expects Bytes<32>)
+      const uniqueReceipt = `${receipt}-${Math.floor(Math.random() * 1000000)}`.substring(0, 32);
       const receiptBuf = new Uint8Array(32);
-      const encoded = new TextEncoder().encode(receipt.substring(0, 32));
+      const encoded = new TextEncoder().encode(uniqueReceipt);
       receiptBuf.set(encoded.slice(0, 32));
-      const tx = await contract.callTx.record_trade(user, BigInt(amount), receiptBuf);
-      setStatusMsg('Success! Tx hash: ' + (tx as any).txHash);
-      setStatusType('success');
-      await fetchScore();
+
+      setStatusMsg('Step 1/3: Generating ZK proof locally...');
+      
+      const PROOF_TIMEOUT_MS = 10 * 60 * 1000; // Increased to 10 minutes
+      
+      // We wrap just the callTx in the timeout. But wait, callTx also balances!
+      // Let's hook into the providers to update the status message dynamically!
+      // To do this, we can redefine the walletProvider methods temporarily for this call!
+      const originalBalanceTx = providers.walletProvider.balanceTx;
+      const originalSubmitTx = providers.midnightProvider.submitTx;
+      
+      providers.walletProvider.balanceTx = async (tx: any, ttl?: Date) => {
+        setStatusMsg('Step 2/3: Awaiting wallet signature (check extension popup)...');
+        return originalBalanceTx.call(providers.walletProvider, tx, ttl);
+      };
+      
+      providers.midnightProvider.submitTx = async (tx: any) => {
+        setStatusMsg('Step 3/3: Submitting to blockchain...');
+        return originalSubmitTx.call(providers.midnightProvider, tx);
+      };
+
+      try {
+        const tx = await Promise.race([
+          contract.callTx.record_trade(user, BigInt(amount), receiptBuf),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error(
+              'Process timed out.'
+            )), PROOF_TIMEOUT_MS)
+          ),
+        ]);
+
+        setStatusMsg('Success! Tx hash: ' + (tx as any).txHash);
+        setStatusType('success');
+        await fetchScore();
+      } finally {
+        // Restore providers
+        providers.walletProvider.balanceTx = originalBalanceTx;
+        providers.midnightProvider.submitTx = originalSubmitTx;
+      }
     } catch (err: any) {
       console.error(err);
       setStatusMsg('Error: ' + err.message);
@@ -102,15 +146,27 @@ export const ReputationFeature: React.FC<Props> = ({ providers, address }) => {
 
   return (
     <div className="dashboard-feature">
-      <div className="feature-header">
+      <motion.div 
+        className="feature-header"
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ type: "spring", bounce: 0, duration: 0.8 }}
+      >
         <div className="feature-title">
            <h2>Welcome to your NightRep Dashboard</h2>
            <p>Experience and Maximize the Benefits of Zero-Knowledge Features</p>
         </div>
-      </div>
+      </motion.div>
 
       <div className="feature-grid">
-         <div className="overview-card">
+         <motion.div 
+            className="overview-card"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ type: "spring", bounce: 0, duration: 0.8, delay: 0.1 }}
+         >
             <div className="card-header">
                <h3>Overview</h3>
                <span className="dropdown-badge">All time v</span>
@@ -120,24 +176,36 @@ export const ReputationFeature: React.FC<Props> = ({ providers, address }) => {
                <span className="score-label">Reputation Score</span>
             </div>
             <p className="contract-address">Contract: {contractAddress ? contractAddress.slice(0,10) + '...' : 'Not Configured'}</p>
-         </div>
+         </motion.div>
 
-         <div className="action-card">
+         <motion.div 
+            className="action-card"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ type: "spring", bounce: 0, duration: 0.8, delay: 0.2 }}
+         >
             <div className="card-header">
                <h3>Record Transaction</h3>
             </div>
             <form onSubmit={handleRecordTrade} className="record-form">
               <div className="input-group">
                 <label>Trade Amount</label>
-                <input type="number" value={amount} onChange={(e) => setAmount(Number(e.target.value))} min="1" required />
+                <input type="number" value={amount} onChange={(e) => setAmount(Number(e.target.value))} min="1" required disabled={isSubmitting} />
               </div>
               <div className="input-group">
                 <label>Secret Receipt (Private)</label>
-                <input type="password" value={receipt} onChange={(e) => setReceipt(e.target.value)} required />
+                <input type="password" value={receipt} onChange={(e) => setReceipt(e.target.value)} required disabled={isSubmitting} />
               </div>
-              <button type="submit" className="btn-solid full-width" disabled={isSubmitting || !providers}>
+              <motion.button 
+                type="submit" 
+                className="btn-solid full-width" 
+                disabled={isSubmitting || !providers}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+              >
                 {isSubmitting ? 'Processing...' : 'Record Trade'}
-              </button>
+              </motion.button>
               {statusMsg && (
                 <div className={`status-alert ${statusType}`}>
                   {statusType === 'success' && (
@@ -153,7 +221,7 @@ export const ReputationFeature: React.FC<Props> = ({ providers, address }) => {
                 </div>
               )}
             </form>
-         </div>
+         </motion.div>
       </div>
     </div>
   );

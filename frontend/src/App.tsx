@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { WalletConnect } from './components/WalletConnect';
 import { ReputationFeature } from './components/ReputationFeature';
+import GlitterWrap from './components/GlitterWrap';
 import './App.css';
 
 function App() {
@@ -16,6 +18,23 @@ function App() {
 
   return (
     <div className="app-wrapper">
+      <div className="glitter-bg-container">
+        <GlitterWrap 
+            particleCount={350} 
+            color1="#22D3EE" 
+            color2="#3B82F6" 
+            color3="#8B5CF6" 
+            speed={4} 
+            density={80} 
+            starSize={15} 
+            focalDepth={15} 
+            turbulence={1} 
+            brightness={80} 
+            glitterIntensity={5} 
+            trailAmount={80} 
+            reverse={false} 
+        />
+      </div>
       <nav className="navbar">
         <div className="logo">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -40,13 +59,23 @@ function App() {
           </p>
           <div className="hero-actions">
             {!api ? (
-              <a href="#" className="btn-solid hero-btn">
+              <motion.a 
+                href="#" 
+                className="btn-solid hero-btn"
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+              >
                 Get Started ↗
-              </a>
+              </motion.a>
             ) : (
-              <a href="#" className="btn-solid hero-btn">
+              <motion.a 
+                href="#" 
+                className="btn-solid hero-btn"
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+              >
                 Dashboard Active ↗
-              </a>
+              </motion.a>
             )}
           </div>
         </div>
