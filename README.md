@@ -20,7 +20,7 @@
 ---
 
 ## 🎯 Live Demo
-**Live Demo Link:** `[Insert your Vercel URL here after deployment]`
+**Live Demo Link:** [https://reputation-system-rho.vercel.app/](https://reputation-system-rho.vercel.app/)
 
 *Note: To run the live demo, please ensure you have the [Lace Wallet Extension](https://www.lace.io/) installed and configured for the Midnight Preview network.*
 
