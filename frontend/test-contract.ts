@@ -1,6 +1,6 @@
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
-import { Contract } from './contracts/managed/reputation/contract.js';
+import { Contract } from '../contracts/managed/reputation/contract.js';
 
 const INDEXER_URL = 'https://indexer.preview.midnight.network/api/v4/graphql';
 const INDEXER_WS_URL = 'wss://indexer.preview.midnight.network/api/v4/graphql/ws';
@@ -16,14 +16,10 @@ async function main() {
       contractAddress: CONTRACT_ADDRESS,
       contractReference: Contract,
     });
-    console.log('Contract found!');
-    
-    // Check state
-    // We cannot read maps without keys easily, but we can check if it loaded.
-    console.log('Contract successfully instantiated.');
+    console.log('EXISTS');
   } catch (e) {
-    console.error('Failed to find contract:', e);
+    console.error('DOES_NOT_EXIST', e);
   }
 }
 
-main().catch(console.error);
+main();
