@@ -25,6 +25,12 @@ export interface ReputationProviders extends MidnightProviders<any, any> {
 }
 
 export const buildReputationContract = async (providers: ReputationProviders, contractAddress: string): Promise<ReputationContract> => {
+  // Check if the contract actually exists on the network first to prevent findDeployedContract from hanging indefinitely
+  const state = await providers.publicDataProvider.queryContractState(contractAddress);
+  if (!state) {
+    throw new Error(`Contract not found on the network. Is your VITE_CONTRACT_ADDRESS correct?`);
+  }
+
   // To instantiate the contract in the browser, we use the compiled Contract 
   // class and pass it to findDeployedContract.
   
@@ -69,22 +75,15 @@ export const checkProofServerReachable = async (url: string): Promise<void> => {
   }
 };
 
-export const initializeProviders = async (walletId: string = '1am'): Promise<ReputationProviders> => {
+export const initializeProviders = async (api: ConnectedAPI): Promise<ReputationProviders> => {
   const indexerUrl = import.meta.env.VITE_INDEXER_URL || 'http://127.0.0.1:8088/api/v4/graphql';
   const indexerWsUrl = import.meta.env.VITE_INDEXER_WS_URL || 'ws://127.0.0.1:8088/api/v4/graphql/ws';
   
   // Set the network ID based on environment or default to Undeployed
-  const network = import.meta.env.VITE_NETWORK === 'preview' ? 'preview' : 'Undeployed';
+  let network = 'Undeployed';
+  if (import.meta.env.VITE_NETWORK === 'preview') network = 'preview';
+  if (import.meta.env.VITE_NETWORK === 'preprod') network = 'preprod';
   setNetworkId(network);
-  
-  if (!(window as any).midnight || !(window as any).midnight[walletId]) {
-    throw new Error(`Midnight wallet '${walletId}' not found. Please install the extension.`);
-  }
-  
-  const windowWallet = (window as any).midnight[walletId];
-  
-  // 1AM wallet exposes connect() instead of enable()
-  const api: ConnectedAPI = await (windowWallet.connect ? windowWallet.connect() : windowWallet.enable());
 
   // Fetch actual keys to prevent bech32 decode errors during transaction building
   const shieldedAddresses = await api.getShieldedAddresses();
@@ -120,6 +119,11 @@ export const initializeProviders = async (walletId: string = '1am'): Promise<Rep
         zkir: await fetchFileAsUint8Array('/reputation/zkir/record_trade.bzkir'),
         prover: await fetchFileAsUint8Array('/reputation/keys/record_trade.prover'),
         verifier: await fetchFileAsUint8Array('/reputation/keys/record_trade.verifier'),
+      },
+      'issue_receipt': {
+        zkir: await fetchFileAsUint8Array('/reputation/zkir/issue_receipt.bzkir'),
+        prover: await fetchFileAsUint8Array('/reputation/keys/issue_receipt.prover'),
+        verifier: await fetchFileAsUint8Array('/reputation/keys/issue_receipt.verifier'),
       }
     }),
     asKeyMaterialProvider: function () { return this; }
@@ -145,6 +149,8 @@ export const initializeProviders = async (walletId: string = '1am'): Promise<Rep
       }
     };
   } else {
+    // Uses the user's browser extension (Lace/1AM) to generate zero-knowledge proofs locally
+    // This internally uses dappConnectorProofProvider from @midnight-ntwrk/midnight-js-dapp-connector-proof-provider
     provingProviderToUse = await api.getProvingProvider(zkConfigProvider as any);
   }
 
@@ -157,10 +163,14 @@ export const initializeProviders = async (walletId: string = '1am'): Promise<Rep
 
   const walletProvider: WalletProvider = {
     balanceTx: async (tx: any, _ttl?: Date) => {
-      const txStr = tx.serialize();
+      const txBytes = tx.serialize();
+      // Ensure we pass a hex string to the DApp connector if it expects string
+      const txStr = txBytes instanceof Uint8Array ? Buffer.from(txBytes).toString('hex') : txBytes;
       const balanced = await api.balanceUnsealedTransaction(txStr);
+      // DApp connector returns hex string, convert back to Uint8Array for Midnight SDK
+      const balancedBytes = typeof balanced.tx === 'string' ? new Uint8Array(Buffer.from(balanced.tx, 'hex')) : balanced.tx;
       return {
-        serialize: () => balanced.tx,
+        serialize: () => balancedBytes,
       } as any;
     },
     getCoinPublicKey: () => {
@@ -173,7 +183,8 @@ export const initializeProviders = async (walletId: string = '1am'): Promise<Rep
 
   const midnightProvider: MidnightProvider = {
     submitTx: async (tx: any) => {
-      const txStr = tx.serialize();
+      const txBytes = tx.serialize();
+      const txStr = txBytes instanceof Uint8Array ? Buffer.from(txBytes).toString('hex') : txBytes;
       await api.submitTransaction(txStr);
       return txStr;
     }

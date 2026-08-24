@@ -4,15 +4,24 @@ import CompactStandardLibrary;
 
 export ledger scores: Map<Bytes<32>, Uint<32>>;
 export ledger used_receipts: Map<Bytes<32>, Uint<32>>;
+export ledger valid_receipts: Map<Bytes<32>, Uint<32>>;
+
+export circuit issue_receipt(receipt: Bytes<32>): [] {
+    const nullifier = persistentHash<Vector<1, Bytes<32>>>([receipt]);
+    const public_nullifier = disclose(nullifier);
+    valid_receipts.insert(public_nullifier, 1 as Uint<32>);
+}
 
 export circuit record_trade(user: Bytes<32>, amount: Uint<32>, receipt: Bytes<32>): [] {
-    const public_receipt = disclose(receipt);
+    const nullifier = persistentHash<Vector<1, Bytes<32>>>([receipt]);
+    const public_nullifier = disclose(nullifier);
     const public_user = disclose(user);
     
-    assert(!used_receipts.member(public_receipt), "Receipt already used");
+    assert(valid_receipts.member(public_nullifier), "Fake Receipt! Not issued by exchange.");
+    assert(!used_receipts.member(public_nullifier), "Receipt already used");
     assert(amount > 0, "Amount must be positive");
     
-    used_receipts.insert(public_receipt, 1 as Uint<32>);
+    used_receipts.insert(public_nullifier, 1 as Uint<32>);
     
     const current_score = scores.member(public_user) ? scores.lookup(public_user) : (0 as Uint<32>);
     const amount_disclosed = disclose(amount);

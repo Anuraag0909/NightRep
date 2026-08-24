@@ -6,7 +6,7 @@
   "author": "",
   "license": "MIT",
   "scripts": {
-    "compile": "wsl ~/.local/bin/compact compile contracts/reputation.compact contracts/managed/reputation",
+    "compile": "wsl ~/.local/bin/compact compile contracts/reputation.compact contracts/managed/reputation && wsl cp -r contracts/managed/reputation/keys frontend/public/reputation/ && wsl cp -r contracts/managed/reputation/zkir frontend/public/reputation/",
     "build": "npx tsc --noEmit || true",
     "setup": "npx tsx src/setup.ts",
     "deploy": "npx tsx src/deploy.ts",
@@ -23,7 +23,10 @@
   },
   "dependencies": {
     "@midnight-ntwrk/compact-runtime": "0.16.0",
+    "@midnight-ntwrk/dapp-connector-api": "4.0.1",
+    "@midnight-ntwrk/midnight-js": "^4.1.1",
     "@midnight-ntwrk/midnight-js-contracts": "4.1.1",
+    "@midnight-ntwrk/midnight-js-dapp-connector-proof-provider": "^4.1.1",
     "@midnight-ntwrk/midnight-js-http-client-proof-provider": "4.1.1",
     "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "4.1.1",
     "@midnight-ntwrk/midnight-js-level-private-state-provider": "4.1.1",

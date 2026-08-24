@@ -4,6 +4,8 @@ export type Witnesses<PS> = {
 }
 
 export type ImpureCircuits<PS> = {
+  issue_receipt(context: __compactRuntime.CircuitContext<PS>,
+                receipt_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
   record_trade(context: __compactRuntime.CircuitContext<PS>,
                user_0: Uint8Array,
                amount_0: bigint,
@@ -11,6 +13,8 @@ export type ImpureCircuits<PS> = {
 }
 
 export type ProvableCircuits<PS> = {
+  issue_receipt(context: __compactRuntime.CircuitContext<PS>,
+                receipt_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
   record_trade(context: __compactRuntime.CircuitContext<PS>,
                user_0: Uint8Array,
                amount_0: bigint,
@@ -21,6 +25,8 @@ export type PureCircuits = {
 }
 
 export type Circuits<PS> = {
+  issue_receipt(context: __compactRuntime.CircuitContext<PS>,
+                receipt_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
   record_trade(context: __compactRuntime.CircuitContext<PS>,
                user_0: Uint8Array,
                amount_0: bigint,
@@ -36,6 +42,13 @@ export type Ledger = {
     [Symbol.iterator](): Iterator<[Uint8Array, bigint]>
   };
   used_receipts: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): bigint;
+    [Symbol.iterator](): Iterator<[Uint8Array, bigint]>
+  };
+  valid_receipts: {
     isEmpty(): boolean;
     size(): bigint;
     member(key_0: Uint8Array): boolean;

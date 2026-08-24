@@ -5,7 +5,7 @@ import { useMidnight } from '../hooks/useMidnight';
 export const WalletConnect: React.FC<{
   onConnect?: (providers: any, api: any, address: string) => void;
 }> = ({ onConnect }) => {
-  const { providers, api, address, isConnecting, connect, disconnect } = useMidnight();
+  const { providers, api, address, error, isConnecting, connect, disconnect } = useMidnight();
 
   React.useEffect(() => {
     if (providers && api && address && onConnect) {
@@ -13,17 +13,37 @@ export const WalletConnect: React.FC<{
     }
   }, [providers, api, address, onConnect]);
 
+  const [availableWallets, setAvailableWallets] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).midnight) {
+      setAvailableWallets(Object.keys((window as any).midnight));
+    }
+  }, []);
+
   if (!api) {
     return (
-      <motion.button 
-        className="btn-outline header-btn" 
-        onClick={connect} 
-        disabled={isConnecting}
-        whileTap={{ scale: 0.97 }}
-        transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-      >
-        {isConnecting ? 'Connecting...' : 'Get Started'}
-      </motion.button>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+        <div className="wallet-connect-options" style={{ display: 'flex', gap: '10px' }}>
+          {availableWallets.length > 0 ? (
+            availableWallets.map(walletId => (
+              <motion.button 
+                key={walletId}
+                className="btn-outline header-btn" 
+                onClick={() => connect(walletId)} 
+                disabled={isConnecting}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+              >
+                {isConnecting ? 'Connecting...' : `Connect ${walletId === '1am' ? '1AM' : (walletId === 'lace' || walletId.length > 20) ? 'Lace' : walletId.substring(0, 8)}`}
+              </motion.button>
+            ))
+          ) : (
+            <span style={{ fontSize: '14px', color: '#888' }}>No Midnight wallets found. Please install an extension.</span>
+          )}
+        </div>
+        {error && <div style={{ color: '#ff4d4f', fontSize: '12px', maxWidth: '250px', textAlign: 'right' }}>{error}</div>}
+      </div>
     );
   }
 

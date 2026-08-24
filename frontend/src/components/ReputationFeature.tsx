@@ -14,6 +14,9 @@ export const ReputationFeature: React.FC<Props> = ({ providers, address }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
   const [statusType, setStatusType] = useState<'info' | 'success' | 'error' | ''>('');
+  
+  const [isIssuing, setIsIssuing] = useState(false);
+  const [generatedReceipt, setGeneratedReceipt] = useState<string>('');
 
   const contractAddress = import.meta.env.VITE_CONTRACT_ADDRESS || '8f4da10f1fd7c42f2caa59988cd0d88fd3d41a30898c746ed325fed575654080';
 
@@ -67,6 +70,53 @@ export const ReputationFeature: React.FC<Props> = ({ providers, address }) => {
     }
   }, [contractAddress, address]);
 
+  const handleIssueReceipt = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!providers || !address) return;
+    setIsIssuing(true);
+    setStatusMsg('Step 1/3: Generating receipt hash locally...');
+    setStatusType('info');
+    
+    try {
+      const contract = await buildReputationContract(providers, contractAddress);
+      const uniqueReceipt32 = `trade-${Date.now()}-${Math.floor(Math.random() * 10000)}`.padEnd(32, '0').substring(0, 32);
+      const receiptBuf = new Uint8Array(32);
+      receiptBuf.set(new TextEncoder().encode(uniqueReceipt32).slice(0, 32));
+
+      const originalBalanceTx = providers.walletProvider.balanceTx;
+      const originalSubmitTx = providers.midnightProvider.submitTx;
+      providers.walletProvider.balanceTx = async (tx: any, ttl?: Date) => {
+        setStatusMsg('Step 2/3: Awaiting wallet signature for Exchange Issue Tx...');
+        return originalBalanceTx.call(providers.walletProvider, tx, ttl);
+      };
+      providers.midnightProvider.submitTx = async (tx: any) => {
+        setStatusMsg('Step 3/3: Submitting issue_receipt to blockchain...');
+        return originalSubmitTx.call(providers.midnightProvider, tx);
+      };
+
+      try {
+        await Promise.race([
+          contract.callTx.issue_receipt(receiptBuf),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Process timed out.')), 10 * 60 * 1000)
+          ),
+        ]);
+        setGeneratedReceipt(uniqueReceipt32);
+        setStatusMsg('Success! Exchange issued receipt. Copy the secret below!');
+        setStatusType('success');
+      } finally {
+        providers.walletProvider.balanceTx = originalBalanceTx;
+        providers.midnightProvider.submitTx = originalSubmitTx;
+      }
+    } catch (err: any) {
+      console.error(err);
+      setStatusMsg('Error: ' + err.message);
+      setStatusType('error');
+    } finally {
+      setIsIssuing(false);
+    }
+  };
+
   const handleRecordTrade = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!providers || !address) return;
@@ -76,7 +126,6 @@ export const ReputationFeature: React.FC<Props> = ({ providers, address }) => {
       setStatusMsg('Warning: Contract address not in .env, using default.');
     }
 
-    
     setIsSubmitting(true);
     setStatusMsg('Building contract call...');
     setStatusType('info');
@@ -91,9 +140,8 @@ export const ReputationFeature: React.FC<Props> = ({ providers, address }) => {
       }
       
       // Build exactly 32 bytes for receipt (contract expects Bytes<32>)
-      const uniqueReceipt = `${receipt}-${Math.floor(Math.random() * 1000000)}`.substring(0, 32);
       const receiptBuf = new Uint8Array(32);
-      const encoded = new TextEncoder().encode(uniqueReceipt);
+      const encoded = new TextEncoder().encode(receipt);
       receiptBuf.set(encoded.slice(0, 32));
 
       setStatusMsg('Step 1/3: Generating ZK proof locally...');
@@ -176,6 +224,38 @@ export const ReputationFeature: React.FC<Props> = ({ providers, address }) => {
                <span className="score-label">Reputation Score</span>
             </div>
             <p className="contract-address">Contract: {contractAddress ? contractAddress.slice(0,10) + '...' : 'Not Configured'}</p>
+         </motion.div>
+
+         <motion.div 
+            className="action-card"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ type: "spring", bounce: 0, duration: 0.8, delay: 0.15 }}
+         >
+            <div className="card-header">
+               <h3>Exchange Simulator</h3>
+            </div>
+            <p style={{ fontSize: '14px', color: '#888', marginBottom: '16px' }}>
+              Simulate an exchange backend generating a receipt hash and logging it on-chain to be claimed.
+            </p>
+            <motion.button 
+              type="button" 
+              className="btn-outline full-width" 
+              onClick={handleIssueReceipt}
+              disabled={isIssuing || isSubmitting || !providers}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+            >
+              {isIssuing ? 'Simulating Exchange...' : 'Simulate Exchange Trade'}
+            </motion.button>
+            
+            {generatedReceipt && (
+              <div style={{ marginTop: '16px', padding: '12px', background: '#222', borderRadius: '8px', border: '1px dashed #444' }}>
+                <p style={{ fontSize: '12px', color: '#aaa', margin: '0 0 8px 0' }}>Your Original Secret Receipt (Copy this!)</p>
+                <code style={{ color: '#00ffcc', wordBreak: 'break-all' }}>{generatedReceipt}</code>
+              </div>
+            )}
          </motion.div>
 
          <motion.div 

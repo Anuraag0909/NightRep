@@ -4,6 +4,25 @@
   "runtime-version": "0.16.0",
   "circuits": [
     {
+      "name": "issue_receipt",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "receipt",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
       "name": "record_trade",
       "pure": false,
       "proof": true,
@@ -59,6 +78,20 @@
     {
       "name": "used_receipts",
       "index": 1,
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Bytes",
+        "length": 32
+      },
+      "value": {
+        "type-name": "Uint",
+        "maxval": 4294967295
+      }
+    },
+    {
+      "name": "valid_receipts",
+      "index": 2,
       "exported": true,
       "storage": "Map",
       "key": {

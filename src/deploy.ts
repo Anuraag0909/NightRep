@@ -19,6 +19,7 @@ import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-p
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config-provider';
 import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-js';
+import { setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 
 // @ts-expect-error Required for wallet sync
 globalThis.WebSocket = WebSocket;
@@ -33,6 +34,7 @@ const PRIVATE_STATE_ID = 'helloWorldPrivateState';
 // 'undeployed' (local devnet). Switch networks with: npm run network <name>
 
 const { network, config: networkConfig } = resolveNetwork();
+setNetworkId(network === 'undeployed' ? 'Undeployed' : network);
 const WALLET = getOrCreateWallet(network);
 const SEED = WALLET.seed;
 {

@@ -18,6 +18,7 @@ import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config
 import { resolveNetwork, getOrCreateWallet, formatWalletBackupNotice, getDeployment } from './network';
 import { createWallet, persistWalletState, unshieldedToken, type WalletContext } from './wallet';
 import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-js';
+import { setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 
 // Enable WebSocket for GraphQL subscriptions
 // @ts-expect-error Required for wallet sync
@@ -28,6 +29,7 @@ globalThis.WebSocket = WebSocket;
 const PRIVATE_STATE_ID = 'helloWorldPrivateState';
 
 const { network, config: networkConfig } = resolveNetwork();
+setNetworkId(network === 'undeployed' ? 'Undeployed' : network);
 const WALLET = getOrCreateWallet(network);
 const SEED = WALLET.seed;
 {

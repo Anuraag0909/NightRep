@@ -10,21 +10,20 @@ export function useMidnight() {
   const [error, setError] = useState<string>('');
   const [isConnecting, setIsConnecting] = useState(false);
 
-  const connect = async () => {
+  const connect = async (walletId: string = '1am') => {
     setIsConnecting(true);
     setError('');
     try {
-      if (!(window as any).midnight || !(window as any).midnight['1am']) {
-        throw new Error(`Midnight wallet '1am' not found. Please install the extension.`);
+      if (!(window as any).midnight || !(window as any).midnight[walletId]) {
+        throw new Error(`Midnight wallet '${walletId}' not found. Please install the extension.`);
       }
       
-      const windowWallet = (window as any).midnight['1am'];
-      const connector: ConnectedAPI = await (windowWallet.connect ? windowWallet.connect() : windowWallet.enable());
+      const windowWallet = (window as any).midnight[walletId];
+      const networkStr = import.meta.env.VITE_NETWORK || 'preview';
+      const connector: ConnectedAPI = await (windowWallet.connect ? windowWallet.connect(networkStr) : windowWallet.enable(networkStr));
       
       // Initialize full Midnight JS environment (wallet, indexer, prover, etc.)
-      // We pass the connector into a new version of initializeProviders if we adjust it,
-      // but for now, initializeProviders also calls enable(). That's fine, it returns the same instance.
-      const newProviders = await initializeProviders('1am');
+      const newProviders = await initializeProviders(connector);
       
       setProviders(newProviders);
       setApi(connector);

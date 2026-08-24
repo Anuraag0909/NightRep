@@ -73,3 +73,4 @@ Thumbs.db
 # Generated Vite files
 # ================================
 *.timestamp-*.mjs
+.vercel

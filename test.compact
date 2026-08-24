@@ -1,0 +1,1 @@
+pragma language_version >= 0.23; import CompactStandardLibrary; export circuit test(sig: Bytes<64>, pk: Bytes<32>, msg: Bytes<32>): [] { verifyEd25519Signature(pk, msg, sig); }
