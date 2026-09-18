@@ -12,7 +12,7 @@ async function main() {
   
   try {
     console.log('Finding contract...', CONTRACT_ADDRESS);
-    const contract = await findDeployedContract(publicDataProvider, {
+    await findDeployedContract(publicDataProvider, {
       contractAddress: CONTRACT_ADDRESS,
       contractReference: Contract,
     });

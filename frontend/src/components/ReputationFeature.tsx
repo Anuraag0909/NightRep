@@ -68,6 +68,7 @@ export const ReputationFeature: React.FC<Props> = ({ providers, address }) => {
     if (contractAddress && address) {
       fetchScore();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contractAddress, address]);
 
   const handleIssueReceipt = async (e: React.MouseEvent) => {
